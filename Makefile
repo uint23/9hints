@@ -31,7 +31,7 @@ CFLAGS ?= -std=c99 -Os -pipe \
 LDFLAGS ?= -Wl,-Os -pie
 
 # libraries
-LDLIBS ?= -lX11
+LDLIBS ?= -lX11 -lXinerama
 
 .PHONY: all clean install uninstall clangd
 .SUFFIXES:

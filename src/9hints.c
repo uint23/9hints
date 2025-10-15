@@ -2,43 +2,104 @@
 #include <stdlib.h>
 
 #include <X11/Xlib.h>
+#include <X11/extensions/Xinerama.h>
 
 #include "9hints.h"
 #include "config.h"
 
 void create_window(void);
+void get_geometry(void);
 unsigned long parse_colour(const char* colour);
+void quit(void);
 void run(void);
 void setup(void);
 
 Display* dpy = NULL;
-Window menu_window = 0;
+Window root;
+Client menu;
 
 int screen = -1;
 int scr_width = 0;
 int scr_height = 0;
+Bool running = False;
 
 unsigned long border_colour;
 unsigned long background_colour;
 
 void create_window(void)
 {
-	int x = (scr_width - WIDTH) / 1;
-	int y = (scr_height - HEIGHT) / 1;
-
 	/* disable other programs managing window */
 	XSetWindowAttributes attrs;
 	attrs.override_redirect = True;
 
-	menu_window = XCreateWindow(
-		dpy, RootWindow(dpy, screen),
-		x, y, WIDTH, HEIGHT, BORDER_WIDTH,
+	menu.win= XCreateWindow(
+		dpy, root,
+		menu.x, menu.y, WIDTH, HEIGHT, BORDER_WIDTH,
 		CopyFromParent, InputOutput, CopyFromParent,
 		CWOverrideRedirect, &attrs
 	);
 
-	XMapWindow(dpy, menu_window);
+	XSetWindowBackground(dpy, menu.win, background_colour);
+	XSetWindowBorder(dpy, menu.win, border_colour);
+
+	XMapWindow(dpy, menu.win);
 	XFlush(dpy);
+}
+
+void get_geometry(void)
+{
+	if (!XineramaIsActive(dpy)) {
+		menu.x = (scr_width - WIDTH) / 2;
+		menu.y = (scr_height - HEIGHT) / 2;
+		return;
+	}
+
+	int n_mons = 0;
+	XineramaScreenInfo *info = XineramaQueryScreens(dpy, &n_mons);
+	/* fallback */
+	if (!info || n_mons <= 0) {
+		menu.x = (scr_width - WIDTH) / 2;
+		menu.y = (scr_height - HEIGHT) / 2;
+		if (info) {
+			XFree(info);
+		}
+		return;
+	}
+
+	/* find monitor with cursor */
+	Window root_ret;
+	Window child_ret;
+	int rootx_ret;
+	int rooty_ret;
+	int winx_ret ;
+	int winy_ret ;
+	unsigned int mask_ret;
+
+	/* get cursor positioning */
+	XQueryPointer(
+		dpy, root, &root_ret, &child_ret,
+		&rootx_ret, &rooty_ret,
+		&winx_ret, &winy_ret, &mask_ret
+	);
+
+	int mon;
+	for (mon = 0; mon < n_mons; mon++) {
+
+		/* check if cursor coordinates within info[mon] dimentions */
+		Bool in_mon =
+			rootx_ret >= info[mon].x_org &&
+			rootx_ret < info[mon].x_org + info[mon].width &&
+			rooty_ret >= info[mon].y_org &&
+			rooty_ret < info[mon].y_org + info[mon].height;
+		if (in_mon) {
+			break;
+		}
+	}
+
+	menu.x = info[mon].x_org + (info[mon].width - WIDTH) / 2;
+	menu.y = info[mon].y_org + (info[mon].height - HEIGHT) / 2;
+
+	XFree(info);
 }
 
 unsigned long parse_colour(const char* colour)
@@ -46,11 +107,13 @@ unsigned long parse_colour(const char* colour)
 	XColor col;
 	Colormap col_map = DefaultColormap(dpy, DefaultScreen(dpy));
 
+	/* "#..."->XColor */
 	if (!XParseColor(dpy, col_map, colour, &col)) {
 		fprintf(stderr, "9menu: cannot parse color %s\n", colour);
 		return WhitePixel(dpy, DefaultScreen(dpy));
 	}
 
+	/* XColor->pixel */
 	if (!XAllocColor(dpy, col_map, &col)) {
 		fprintf(stderr, "9menu: cannot allocate color %s\n", colour);
 		return WhitePixel(dpy, DefaultScreen(dpy));
@@ -59,12 +122,20 @@ unsigned long parse_colour(const char* colour)
 	return col.pixel;
 }
 
+void quit(void)
+{
+	XDestroyWindow(dpy, menu.win);
+	XCloseDisplay(dpy);
+}
+
 void run(void)
 {
 	XEvent ev;
-	for (;;) {
+	running = True;
+	while (running) {
 		XNextEvent(dpy, &ev);
 	}
+	quit();
 }
 
 void setup(void)
@@ -75,12 +146,15 @@ void setup(void)
 		exit(EXIT_FAILURE);
 	}
 
+
 	screen = XDefaultScreen(dpy);
 	scr_width = XDisplayWidth(dpy, screen);
 	scr_height = XDisplayHeight(dpy, screen);
 
+	root = RootWindow(dpy, screen);
+
 	border_colour = parse_colour(BORDER_COLOUR);
-	border_colour = parse_colour(BORDER_COLOUR);
+	background_colour = parse_colour(BACKGROUND_COLOUR);
 }
 
 int main(int argc, char** argv)
@@ -91,6 +165,7 @@ int main(int argc, char** argv)
 	}
 
 	setup();
+	get_geometry();
 	create_window();
 	run();
 
