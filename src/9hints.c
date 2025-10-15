@@ -9,6 +9,8 @@
 */
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
+#include <sys/select.h>
 
 #include <X11/Xlib.h>
 #include <X11/extensions/Xinerama.h>
@@ -20,6 +22,7 @@ void create_window(void);
 void draw_modules(void);
 void get_geometry(void);
 void handle_event(XEvent ev);
+void xsleep(long ms);
 unsigned long parse_colour(const char* colour);
 void quit(void);
 void run(void);
@@ -84,6 +87,11 @@ void create_window(void)
 
 void draw_modules(void)
 {
+	/* clear screen first */
+	XSetForeground(dpy, DefaultGC(dpy, screen), background_colour);
+	XFillRectangle(dpy, menu.win, DefaultGC(dpy, screen),
+			       0, 0, WIDTH, HEIGHT);
+
 	GC gc = XCreateGC(dpy, menu.win, 0, NULL);
 
 	for (int i = 0; i < n_modules; i++) {
@@ -177,6 +185,14 @@ void handle_event(XEvent ev)
 	}
 }
 
+void xsleep(long ms)
+{
+	struct timeval time_val;
+	time_val.tv_sec = ms / 1000;
+	time_val.tv_usec = (ms % 1000) * 1000;
+	select(0, NULL, NULL, NULL, &time_val);
+}
+
 unsigned long parse_colour(const char* colour)
 {
 	XColor col;
@@ -210,10 +226,23 @@ void run(void)
 {
 	XEvent ev;
 	running = True;
+
+	time_t last_draw = 0;
+
 	while (running) {
-		XNextEvent(dpy, &ev);
-		handle_event(ev);
-	}
+		while (XPending(dpy)) {
+			XNextEvent(dpy, &ev);
+			handle_event(ev);
+		}
+
+		/* handle redrawing */
+		time_t now = time(NULL);
+		if (now != last_draw) {
+			draw_modules();
+			last_draw = now;
+		}
+		xsleep(10);
+	} 
 	quit();
 }
 
