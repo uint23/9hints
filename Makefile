@@ -17,7 +17,7 @@ OBJ := $(patsubst $(SRC_DIR)/%.c,$(OBJ_DIR)/%.o,$(SRC))
 DEP := $(OBJ:.o=.d)
 
 # flags
-CPPFLAGS ?= -Iserver/src -Iserver/include -D_FORTIFY_SOURCE=2
+CPPFLAGS ?= -Isrc -D_FORTIFY_SOURCE=2
 
 # compile flags + warnings, hardening
 CFLAGS ?= -std=c99 -Os -pipe \
@@ -31,7 +31,7 @@ CFLAGS ?= -std=c99 -Os -pipe \
 LDFLAGS ?= -Wl,-Os -pie
 
 # libraries
-LDLIBS ?=
+LDLIBS ?= -lX11
 
 .PHONY: all clean install uninstall clangd
 .SUFFIXES:
