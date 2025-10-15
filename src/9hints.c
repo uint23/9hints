@@ -6,26 +6,39 @@
 #include "9hints.h"
 #include "config.h"
 
+void create_window(void);
+unsigned long parse_colour(const char* colour);
+void run(void);
+void setup(void);
+
 Display* dpy = NULL;
 Window menu_window = 0;
 
+int screen = -1;
 int scr_width = 0;
 int scr_height = 0;
 
 unsigned long border_colour;
 unsigned long background_colour;
 
-void create_window(void);
-unsigned long parse_colour(const char* colour);
-void setup(void);
-
 void create_window(void)
 {
-	int x = scr_width - WIDTH;
-	int y = scr_height - HEIGHT;
-	XCreateSimpleWindow(dpy, menu_window, x, y, WIDTH, HEIGHT,
-			            BORDER_WIDTH, border_colour, background_colour);
-	while (1);
+	int x = (scr_width - WIDTH) / 1;
+	int y = (scr_height - HEIGHT) / 1;
+
+	/* disable other programs managing window */
+	XSetWindowAttributes attrs;
+	attrs.override_redirect = True;
+
+	menu_window = XCreateWindow(
+		dpy, RootWindow(dpy, screen),
+		x, y, WIDTH, HEIGHT, BORDER_WIDTH,
+		CopyFromParent, InputOutput, CopyFromParent,
+		CWOverrideRedirect, &attrs
+	);
+
+	XMapWindow(dpy, menu_window);
+	XFlush(dpy);
 }
 
 unsigned long parse_colour(const char* colour)
@@ -46,6 +59,14 @@ unsigned long parse_colour(const char* colour)
 	return col.pixel;
 }
 
+void run(void)
+{
+	XEvent ev;
+	for (;;) {
+		XNextEvent(dpy, &ev);
+	}
+}
+
 void setup(void)
 {
 	dpy = XOpenDisplay(NULL);
@@ -54,7 +75,7 @@ void setup(void)
 		exit(EXIT_FAILURE);
 	}
 
-	int screen = XDefaultScreen(dpy);
+	screen = XDefaultScreen(dpy);
 	scr_width = XDisplayWidth(dpy, screen);
 	scr_height = XDisplayHeight(dpy, screen);
 
@@ -71,6 +92,7 @@ int main(int argc, char** argv)
 
 	setup();
 	create_window();
+	run();
 
 	return EXIT_SUCCESS;
 }
