@@ -17,10 +17,10 @@ typedef struct {
 } Client;
 
 typedef struct Module {
-	void (*fn)(Display*, Window, GC, int, int); /* display, window
-												   graphics context,
-												   x, y */
+	void (*fn)(Display*, Window, GC, /* display, window, graphic context */
+		       int, int, int, int);  /* x, y, width, height */
 	int x;
 	int y;
-	int update;
+	int width;
+	int height;
 } Module;

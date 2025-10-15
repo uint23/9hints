@@ -26,15 +26,16 @@ void run(void);
 void setup(void);
 
 Display* dpy = NULL;
+Client menu;
+
 Window root;
 Window revert_win;
-Client menu;
+int revert_to;
 
 int screen = -1;
 int scr_width = 0;
 int scr_height = 0;
 int n_modules = 0;
-int revert_to;
 Bool running = False;
 
 unsigned long border_colour;
@@ -90,7 +91,8 @@ void draw_modules(void)
 			/* call module */
 			modules[i].fn(
 				dpy, menu.win, gc,
-				modules[i].x, modules[i].y
+				modules[i].x, modules[i].y,
+				modules[i].width, modules[i].height
 			);
 		}
 	}
