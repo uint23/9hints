@@ -6,6 +6,8 @@
 #define AUTHOR "(C) Abhinav Prasai 2025"
 #define LICINFO "See LICENSE for more info"
 
+/* typedef void(*event_handler)(void); */
+
 typedef struct {
 	int    x;
 	int    y;
@@ -13,3 +15,12 @@ typedef struct {
 	int    height;
 	Window win;
 } Client;
+
+typedef struct Module {
+	void (*fn)(Display*, Window, GC, int, int); /* display, window
+												   graphics context,
+												   x, y */
+	int x;
+	int y;
+	int update;
+} Module;

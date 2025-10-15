@@ -12,7 +12,10 @@ MAN_DIR := $(PREFIX)/share/man/man1
 # layout
 SRC_DIR := src/
 OBJ_DIR := build/
-SRC := $(wildcard $(SRC_DIR)/*.c)
+
+SRC := $(wildcard $(SRC_DIR)/*.c) \
+       $(wildcard $(SRC_DIR)/modules/*.c)
+
 OBJ := $(patsubst $(SRC_DIR)/%.c,$(OBJ_DIR)/%.o,$(SRC))
 DEP := $(OBJ:.o=.d)
 

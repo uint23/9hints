@@ -1,3 +1,12 @@
+/*
+ * 9hints:
+ *
+ * a plan9 inspired dialogue box which gives you
+ * all the system info you want without having an
+ * ugly bar or box on your screen all the time!
+ *
+ * > uint 2025
+*/
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -8,7 +17,9 @@
 #include "config.h"
 
 void create_window(void);
+void draw_modules(void);
 void get_geometry(void);
+void handle_event(XEvent ev);
 unsigned long parse_colour(const char* colour);
 void quit(void);
 void run(void);
@@ -16,11 +27,14 @@ void setup(void);
 
 Display* dpy = NULL;
 Window root;
+Window revert_win;
 Client menu;
 
 int screen = -1;
 int scr_width = 0;
 int scr_height = 0;
+int n_modules = 0;
+int revert_to;
 Bool running = False;
 
 unsigned long border_colour;
@@ -42,8 +56,45 @@ void create_window(void)
 	XSetWindowBackground(dpy, menu.win, background_colour);
 	XSetWindowBorder(dpy, menu.win, border_colour);
 
+	XSelectInput(
+		dpy, menu.win,
+		ExposureMask | KeyPressMask |
+		ButtonPressMask | StructureNotifyMask
+	);
+
 	XMapWindow(dpy, menu.win);
 	XFlush(dpy);
+
+	/* starting too prevent input to be set too early */
+	XEvent ev;
+	do {
+		XNextEvent(dpy, &ev);
+	} while (ev.type != MapNotify);
+
+	/* wm won't do it because override_redirect=True */
+	XSetInputFocus(dpy, menu.win, RevertToNone, CurrentTime);
+	(void)XGrabKeyboard( /* some wm's wont give keyboard access */
+		dpy, menu.win, True,
+		GrabModeAsync, GrabModeAsync, CurrentTime
+	);
+
+	draw_modules();
+}
+
+void draw_modules(void)
+{
+	GC gc = XCreateGC(dpy, menu.win, 0, NULL);
+
+	for (int i = 0; i < n_modules; i++) {
+		if (modules[i].fn) {
+			/* call module */
+			modules[i].fn(
+				dpy, menu.win, gc,
+				modules[i].x, modules[i].y
+			);
+		}
+	}
+	XFreeGC(dpy, gc);
 }
 
 void get_geometry(void)
@@ -102,6 +153,28 @@ void get_geometry(void)
 	XFree(info);
 }
 
+void handle_event(XEvent ev)
+{
+	if (ev.type == Expose) {
+		draw_modules();
+	}
+	else if (ev.type == KeyPress) {
+		running = False;
+	}
+
+	switch (ev.type) {
+
+	case Expose:
+		draw_modules();
+		break;
+
+	case KeyPress:
+		running = False;
+		break;
+
+	}
+}
+
 unsigned long parse_colour(const char* colour)
 {
 	XColor col;
@@ -124,6 +197,9 @@ unsigned long parse_colour(const char* colour)
 
 void quit(void)
 {
+	XSetInputFocus(dpy, revert_win, revert_to, CurrentTime);
+	XUngrabKeyboard(dpy, CurrentTime);
+
 	XDestroyWindow(dpy, menu.win);
 	XCloseDisplay(dpy);
 }
@@ -134,6 +210,7 @@ void run(void)
 	running = True;
 	while (running) {
 		XNextEvent(dpy, &ev);
+		handle_event(ev);
 	}
 	quit();
 }
@@ -146,15 +223,18 @@ void setup(void)
 		exit(EXIT_FAILURE);
 	}
 
-
 	screen = XDefaultScreen(dpy);
 	scr_width = XDisplayWidth(dpy, screen);
 	scr_height = XDisplayHeight(dpy, screen);
 
 	root = RootWindow(dpy, screen);
+	/* store current focused window to restore focus after quit */
+	XGetInputFocus(dpy, &revert_win, &revert_to);
 
 	border_colour = parse_colour(BORDER_COLOUR);
 	background_colour = parse_colour(BACKGROUND_COLOUR);
+
+	n_modules = sizeof(modules) / sizeof(Module);
 }
 
 int main(int argc, char** argv)
