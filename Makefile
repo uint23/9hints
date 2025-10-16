@@ -32,7 +32,7 @@ CFLAGS ?= -std=c99 -Os -pipe \
 LDFLAGS ?= -Wl,-Os -pie
 
 # libraries
-LDLIBS ?= -lX11 -lXinerama -lm
+LDLIBS += $(shell pkg-config --libs   x11 xinerama xft)
 
 .PHONY: all clean install uninstall clangd
 .SUFFIXES:

@@ -2,6 +2,7 @@
 #include <string.h>
 #include <time.h>
 
+#include <X11/Xft/Xft.h>
 #include <X11/Xlib.h>
 
 #include "modules.h"

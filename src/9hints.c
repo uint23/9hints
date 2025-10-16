@@ -187,6 +187,7 @@ void handle_event(XEvent ev)
 
 void xsleep(long ms)
 {
+	/* need to implement own sleep */
 	struct timeval time_val;
 	time_val.tv_sec = ms / 1000;
 	time_val.tv_usec = (ms % 1000) * 1000;
