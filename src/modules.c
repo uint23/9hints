@@ -6,17 +6,14 @@
 #include <X11/Xlib.h>
 
 #include "modules.h"
+#include "config.h"
 
-void module_clock(Display* dpy, Window w, GC gc,
-	              int x, int y, int width, int height)
+void module_9hints_banner(Display* dpy, Window w, GC gc,
+		                  int x, int y, int width, int height)
 {
-	(void) width;
-	(void) height;
-	char buf[16];
-	time_t t = time(NULL);
-	strftime(buf, sizeof buf, "%H:%M:%S", localtime(&t));
-	XDrawString(dpy, w, gc, x, y, buf, strlen(buf));
+
 }
+
 void module_analouge_clock(Display *dpy, Window w, GC gc,
                            int x, int y, int width, int height)
 {
@@ -51,4 +48,43 @@ void module_analouge_clock(Display *dpy, Window w, GC gc,
     int sx = cx + (int)(r * 0.9 * sin(sec_angle));
     int sy = cy - (int)(r * 0.9 * cos(sec_angle));
     XDrawLine(dpy, w, gc, cx, cy, sx, sy);
+}
+
+void module_clock(Display* dpy, Window w, GC gc,
+	              int x, int y, int width, int height)
+{
+    (void) gc;
+    (void) width;
+    (void) height;
+    (void) w;
+    time_t t = time(NULL);
+    char time_buf[32];
+    strftime(time_buf, sizeof(time_buf), "%H:%M:%S", localtime(&t));
+
+    /* TODO: move Xft logic out of modules */
+    XftFont* font = XftFontOpenName(dpy, DefaultScreen(dpy), FONT);
+    XftColor font_colour;
+    XRenderColor render_colour = {0, 0, 0, 0xffff}; /* black */
+
+    XftDraw* draw = XftDrawCreate(
+        dpy, w,
+        DefaultVisual(dpy, DefaultScreen(dpy)),
+        DefaultColormap(dpy, DefaultScreen(dpy))
+    );
+
+    XftColorAllocValue(dpy, DefaultVisual(dpy, DefaultScreen(dpy)),
+            DefaultColormap(dpy, DefaultScreen(dpy)),
+            &render_colour, &font_colour);
+
+    /* centre text */
+    /* x = x + width / 2; */
+    /* y = y + width / 2; */
+
+    XftDrawStringUtf8(draw, &font_colour, font, x, y,
+                      (const FcChar8*)time_buf, strlen(time_buf));
+
+    XftColorFree(dpy, DefaultVisual(dpy, DefaultScreen(dpy)),
+                 DefaultColormap(dpy, DefaultScreen(dpy)), &font_colour);
+    XftFontClose(dpy, font);
+    XftDrawDestroy(draw);
 }

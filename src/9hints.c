@@ -13,6 +13,7 @@
 #include <sys/select.h>
 
 #include <X11/Xlib.h>
+#include <X11/Xft/Xft.h>
 #include <X11/extensions/Xinerama.h>
 
 #include "9hints.h"
@@ -93,6 +94,8 @@ void draw_modules(void)
 			       0, 0, WIDTH, HEIGHT);
 
 	GC gc = XCreateGC(dpy, menu.win, 0, NULL);
+
+    /* Xft draw */
 
 	for (int i = 0; i < n_modules; i++) {
 		if (modules[i].fn) {

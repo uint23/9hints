@@ -1,6 +1,7 @@
 #pragma once
 
 #include <X11/Xlib.h>
+#include <X11/Xft/Xft.h>
 
 #define VERSION "9hints ver. 0.1"
 #define AUTHOR "(C) Abhinav Prasai 2025"
@@ -17,8 +18,10 @@ typedef struct {
 } Client;
 
 typedef struct Module {
-	void (*fn)(Display*, Window, GC, /* display, window, graphic context */
-		       int, int, int, int);  /* x, y, width, height */
+	void (*fn) (
+		Display*, Window, GC, /* display, window, graphic context */
+		int, int, int, int    /* draw, x, y, width, height */
+	);  
 	int x;
 	int y;
 	int width;
