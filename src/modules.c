@@ -11,7 +11,36 @@
 void module_9hints_banner(Display* dpy, Window w, GC gc,
 		                  int x, int y, int width, int height)
 {
+    (void) gc;
+    (void) height;
+    const char* message = MESSAGE;
 
+    /* TODO: move Xft logic out of modules */
+    XftFont* font = XftFontOpenName(dpy, DefaultScreen(dpy), FONT);
+    XftColor font_colour;
+    XRenderColor render_colour = {0, 0, 0, 0xffff}; /* black */
+
+    XftDraw* draw = XftDrawCreate(
+        dpy, w,
+        DefaultVisual(dpy, DefaultScreen(dpy)),
+        DefaultColormap(dpy, DefaultScreen(dpy))
+    );
+
+    XftColorAllocValue(dpy, DefaultVisual(dpy, DefaultScreen(dpy)),
+            DefaultColormap(dpy, DefaultScreen(dpy)),
+            &render_colour, &font_colour);
+
+    /* centre text */
+    x = (x + width) / 2;
+    y = (y + width) / 2;
+
+    XftDrawStringUtf8(draw, &font_colour, font, x, y,
+                      (const FcChar8*)message, strlen(message));
+
+    XftColorFree(dpy, DefaultVisual(dpy, DefaultScreen(dpy)),
+                 DefaultColormap(dpy, DefaultScreen(dpy)), &font_colour);
+    XftFontClose(dpy, font);
+    XftDrawDestroy(draw);
 }
 
 void module_analouge_clock(Display *dpy, Window w, GC gc,
