@@ -18,6 +18,7 @@
 
 #include "9hints.h"
 #include "config.h"
+#include "modules.h"
 
 void create_window(void);
 void draw_modules(void);
@@ -95,8 +96,8 @@ void draw_modules(void)
 
 	GC gc = XCreateGC(dpy, menu.win, 0, NULL);
 
-    /* Xft draw */
-
+	/* set Xft draw for this window/frame so modules use cached draw */
+	xft_set_draw(dpy, menu.win);
 	for (int i = 0; i < n_modules; i++) {
 		if (modules[i].fn) {
 			/* call module */
@@ -223,6 +224,7 @@ void quit(void)
 	XUngrabKeyboard(dpy, CurrentTime);
 
 	XDestroyWindow(dpy, menu.win);
+	xft_cleanup(dpy);
 	XCloseDisplay(dpy);
 }
 
@@ -270,6 +272,9 @@ void setup(void)
 	background_colour = parse_colour(BACKGROUND_COLOUR);
 
 	n_modules = sizeof(modules) / sizeof(Module);
+
+	/* initialize Xft resources used by modules */
+	xft_init(dpy);
 }
 
 int main(int argc, char** argv)

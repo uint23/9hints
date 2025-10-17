@@ -11,3 +11,7 @@ void module_9hints_banner(Display* dpy, Window w, GC gc,
 
 void module_clock(Display* dpy, Window w, GC gc,
 		          int x, int y, int width, int height);
+
+void xft_init(Display *dpy);
+void xft_set_draw(Display *dpy, Window w);
+void xft_cleanup(Display *dpy);
